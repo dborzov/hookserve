@@ -10,5 +10,6 @@ func parsePullRequst(event *Event, request *jsontree.JsonTree) (err error) {
 	event.BaseOwner, err = request.Get("pull_request").Get("base").Get("repo").Get("owner").Get("login").String()
 	event.BaseRepo, err = request.Get("pull_request").Get("base").Get("repo").Get("name").String()
 	event.BaseBranch, err = request.Get("pull_request").Get("base").Get("ref").String()
+
 	return nil
 }

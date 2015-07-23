@@ -1,9 +1,8 @@
 package hookserve
 
 import (
+	"fmt"
 	"testing"
-
-	"github.com/bmatsuo/go-jsontree"
 )
 
 var examplePushJSON = `{
@@ -166,12 +165,13 @@ var examplePushJSON = `{
     "type": "User",
     "site_admin": false
   }
-}`
+}
+`
 
 func TestPushParser(t *testing.T) {
-	request := jsontree.New()
-	err := request.UnmarshalJSON(examplePushJSON)
+	event, err := LoadEvent([]byte(examplePushJSON), "push")
 	if err != nil {
-		t.Error("Can't parse that example JSON: ", err)
+		t.Error("Load Event failed: ", err)
 	}
+	fmt.Printf("The result is: %#v \n", event)
 }

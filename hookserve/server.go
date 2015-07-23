@@ -98,7 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	event, err := LoadEvent(request, eventType)
+	event, err := LoadEvent(body, eventType)
 
 	// We've built our Event - put it into the channel and we're done
 	go func() {

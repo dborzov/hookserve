@@ -8,18 +8,9 @@ func parsePush(event *Event, request *jsontree.JsonTree) error {
 		return err
 	}
 
-	// Fill in values
 	event.Branch = rawRef[11:]
-	if err != nil {
-		return err
-	}
 	event.Commit, err = request.Get("head_commit").Get("id").String()
-	if err != nil {
-		return err
-	}
 	event.Owner, err = request.Get("repository").Get("owner").Get("name").String()
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
