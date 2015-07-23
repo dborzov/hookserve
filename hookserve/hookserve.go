@@ -5,11 +5,12 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"github.com/bmatsuo/go-jsontree"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/bmatsuo/go-jsontree"
 )
 
 var ErrInvalidEventFormat = errors.New("Unable to parse event string. Invalid Format.")
@@ -132,10 +133,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "400 Bad Request - Missing X-GitHub-Event Header", http.StatusBadRequest)
 		return
 	}
-	if eventType != "push" && eventType != "pull_request" {
-		http.Error(w, "400 Bad Request - Unknown Event Type "+eventType, http.StatusBadRequest)
-		return
-	}
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -170,94 +167,30 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Parse the request and build the Event
-	event := Event{}
-
-	if eventType == "push" {
-		rawRef, err := request.Get("ref").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// If the ref is not a branch, we don't care about it
-		if rawRef[:11] != "refs/heads/" || request.Get("head_commit").IsNull() {
-			return
-		}
-
-		// Fill in values
-		event.Type = eventType
-		event.Branch = rawRef[11:]
-		event.Repo, err = request.Get("repository").Get("name").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.Commit, err = request.Get("head_commit").Get("id").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.Owner, err = request.Get("repository").Get("owner").Get("name").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if eventType == "pull_request" {
-		action, err := request.Get("action").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// If the action is not to open or to synchronize we don't care about it
-		if action != "synchronize" && action != "opened" {
-			return
-		}
-
-		// Fill in values
-		event.Type = eventType
-		event.Owner, err = request.Get("pull_request").Get("head").Get("repo").Get("owner").Get("login").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.Repo, err = request.Get("pull_request").Get("head").Get("repo").Get("name").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.Branch, err = request.Get("pull_request").Get("head").Get("ref").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.Commit, err = request.Get("pull_request").Get("head").Get("sha").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.BaseOwner, err = request.Get("pull_request").Get("base").Get("repo").Get("owner").Get("login").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.BaseRepo, err = request.Get("pull_request").Get("base").Get("repo").Get("name").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		event.BaseBranch, err = request.Get("pull_request").Get("base").Get("ref").String()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		http.Error(w, "Unknown Event Type "+eventType, http.StatusInternalServerError)
+	event := &Event{}
+	event.Type = eventType
+	event.Repo, err = request.Get("repository").Get("name").String()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	switch eventType {
+	case "push":
+		err = parsePush(event, request)
+	case "pull_request":
+		err = parsePullRequst(event, request)
 	}
 
 	// We've built our Event - put it into the channel and we're done
 	go func() {
-		s.Events <- event
+		s.Events <- *event
 	}()
 
-	w.Write([]byte(event.String()))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("thanks, github ^____^"))
 }
