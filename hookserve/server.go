@@ -98,22 +98,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// Parse the request and build the Event
-	event := &Event{}
-	event.Type = eventType
-	event.Repo, err = request.Get("repository").Get("name").String()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	switch eventType {
-	case "push":
-		err = parsePush(event, request)
-	case "pull_request":
-		err = parsePullRequst(event, request)
-	}
+	event, err := LoadEvent(request, eventType)
 
 	// We've built our Event - put it into the channel and we're done
 	go func() {
