@@ -92,8 +92,8 @@ type Server struct {
 // By default the Port is set to 80 and the Path is set to `/postreceive`
 func NewServer() *Server {
 	return &Server{
-		Port:   80,
-		Path:   "/postreceive",
+		Port:   5000,
+		Path:   "/",
 		Events: make(chan Event, 10), // buffered to 10 items
 	}
 }
