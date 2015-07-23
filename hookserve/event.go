@@ -24,6 +24,12 @@ type Repo struct {
 }
 
 type Commit struct {
+	Author  Author `json:"author"`
 	Url     string `json:"url"`
 	Message string `json:"message"`
+}
+
+type Author struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
 }
